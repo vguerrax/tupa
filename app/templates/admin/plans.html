@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Planos | Tupã</title>
+    <style>
+      :root { color-scheme: light; --ink:#18201b; --muted:#667168; --line:#dce4de; --brand:#17643a; --paper:#f4f7f4; }
+      * { box-sizing:border-box; } body { margin:0; color:var(--ink); background:var(--paper); font:15px/1.5 system-ui,sans-serif; }
+      header { background:#10291b; color:white; padding:22px max(24px,calc((100vw - 1120px)/2)); } header strong { font-size:20px; letter-spacing:.08em; } header span { color:#a9c5b3; margin-left:12px; }
+      nav { float:right; } nav a { color:#dcebe1; margin-left:18px; text-decoration:none; } nav a.active { color:white; font-weight:700; }
+      main { max-width:1120px; margin:34px auto; padding:0 24px; } h1,h2,h3 { margin:0 0 8px; } h1 { font-size:28px; } h2 { font-size:19px; } h3 { font-size:17px; }
+      p { color:var(--muted); margin:0 0 20px; } .toolbar,.card { background:white; border:1px solid var(--line); border-radius:12px; padding:22px; box-shadow:0 8px 30px #173b2410; }
+      .toolbar { display:flex; align-items:end; gap:16px; margin-bottom:24px; } .toolbar form { display:flex; align-items:end; gap:12px; flex:1; }
+      .plans { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; } .new { border-style:dashed; }
+      .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; } label { display:block; margin:13px 0 5px; font-weight:650; font-size:13px; }
+      input,select { width:100%; border:1px solid #bac8be; border-radius:8px; padding:9px 10px; font:inherit; background:white; } input:focus,select:focus { outline:2px solid #55a878; border-color:transparent; }
+      .checks { display:flex; gap:22px; margin-top:16px; } .checks label { margin:0; } .checks input { width:auto; margin-right:6px; }
+      button { border:0; border-radius:8px; padding:10px 16px; color:white; background:var(--brand); font-weight:700; cursor:pointer; margin-top:18px; }
+      .toolbar button { margin:0; } .badge { padding:3px 9px; border-radius:999px; font-size:12px; font-weight:700; } .on { background:#e6f4eb; color:#185d36; } .off { background:#f0f1f0; color:#6b716d; }
+      .titleline { display:flex; align-items:center; justify-content:space-between; gap:12px; } .notice,.error { border-radius:8px; padding:10px 12px; margin-bottom:18px; } .notice { background:#e6f4eb; color:#185d36; } .error { background:#fff0ed; color:#9a2f20; }
+      .hint { font-size:12px; color:var(--muted); } .empty { text-align:center; padding:48px; }
+      @media(max-width:800px){ nav{float:none;margin-top:10px} nav a{margin:0 16px 0 0}.plans{grid-template-columns:1fr}.toolbar,.toolbar form{display:block}.toolbar button{margin-top:12px}.row{grid-template-columns:1fr} }
+    </style>
+  </head>
+  <body>
+    <header><strong>TUPÃ</strong><span>Administração</span><nav><a href="/admin/products">Produtos</a><a class="active" href="/admin/plans">Planos</a></nav></header>
+    <main>
+      <h1>Gerenciamento de planos</h1>
+      <p>Configure limites, recursos, preço e visibilidade pública por produto.</p>
+      {% if saved %}<div class="notice">Plano salvo com sucesso.</div>{% endif %}
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+      <section class="toolbar">
+        <form method="get" action="/admin/plans">
+          <div style="flex:1"><label for="product_id">Produto</label>
+            <select id="product_id" name="product_id">
+              {% for product in products %}<option value="{{ product.id }}" {% if selected and selected.id == product.id %}selected{% endif %}>{{ product.name }} ({{ product.slug }})</option>{% endfor %}
+            </select>
+          </div>
+          <button type="submit">Carregar planos</button>
+        </form>
+      </section>
+      {% if selected %}
+      <div class="plans">
+        {% for plan in selected.plans %}
+        <section class="card">
+          <div class="titleline"><h2>{{ plan.name }}</h2><span class="badge {{ 'on' if plan.is_active else 'off' }}">{{ 'Publico' if plan.is_active else 'Inativo' }}</span></div>
+          <p><span class="hint">ID: {{ plan.id }}</span></p>
+          <form method="post" action="/admin/plans">
+            <input type="hidden" name="product_id" value="{{ selected.id }}"><input type="hidden" name="plan_id" value="{{ plan.id }}">
+            <div class="row"><div><label>Nome</label><input name="name" required value="{{ plan.name }}"></div><div><label>Slug</label><input name="slug" required value="{{ plan.slug }}"></div></div>
+            <div class="row"><div><label>Posição</label><input type="number" min="0" name="position" required value="{{ plan.position }}"></div><div><label>Preco em centavos</label><input type="number" min="0" name="price_cents" required value="{{ plan.price_cents }}"></div></div>
+            <label>Moeda</label><input name="currency" maxlength="3" required value="{{ plan.currency }}">
+            <div class="row"><div><label>Receitas</label><input type="number" min="-1" name="max_recipes" required value="{{ plan.features.get('max_recipes', -1) }}"></div><div><label>Slots de produto</label><input type="number" min="-1" name="max_slots" required value="{{ plan.features.get('max_slots', -1) }}"></div></div>
+            <div class="row"><div><label>Usuários</label><input type="number" min="-1" name="max_users" required value="{{ plan.features.get('max_users', -1) }}"></div><div><label>Insumos</label><input type="number" min="-1" name="max_ingredients" required value="{{ plan.features.get('max_ingredients', -1) }}"></div></div>
+            <label>Relatorios</label><select name="reports"><option value="none" {% if not plan.features.get('reports') %}selected{% endif %}>Nao</option><option value="basic" {% if plan.features.get('reports') == 'basic' %}selected{% endif %}>Basico</option><option value="complete" {% if plan.features.get('reports') == 'complete' %}selected{% endif %}>Completo</option></select>
+            <div class="checks"><label><input type="checkbox" name="export" value="true" {% if plan.features.get('export') %}checked{% endif %}>Exportação</label><label><input type="checkbox" name="is_active" value="true" {% if plan.is_active %}checked{% endif %}>Publico/ativo</label></div>
+            <button type="submit">Salvar alterações</button>
+          </form>
+        </section>
+        {% endfor %}
+        <section class="card new">
+          <h2>Novo plano</h2><p>Use -1 para limites ilimitados.</p>
+          <form method="post" action="/admin/plans">
+            <input type="hidden" name="product_id" value="{{ selected.id }}">
+            <div class="row"><div><label>Nome</label><input name="name" required placeholder="Business"></div><div><label>Slug</label><input name="slug" required placeholder="business"></div></div>
+            <div class="row"><div><label>Posição</label><input type="number" min="0" name="position" required value="{{ selected.plans|length }}"></div><div><label>Preco em centavos</label><input type="number" min="0" name="price_cents" required value="0"></div></div>
+            <label>Moeda</label><input name="currency" maxlength="3" required value="BRL">
+            <div class="row"><div><label>Receitas</label><input type="number" min="-1" name="max_recipes" required value="-1"></div><div><label>Slots de produto</label><input type="number" min="-1" name="max_slots" required value="-1"></div></div>
+            <div class="row"><div><label>Usuários</label><input type="number" min="-1" name="max_users" required value="-1"></div><div><label>Insumos</label><input type="number" min="-1" name="max_ingredients" required value="-1"></div></div>
+            <label>Relatorios</label><select name="reports"><option value="none">Não</option><option value="basic">Basico</option><option value="complete">Completo</option></select>
+            <div class="checks"><label><input type="checkbox" name="export" value="true">Exportação</label><label><input type="checkbox" name="is_active" value="true" checked>Publico/ativo</label></div>
+            <button type="submit">Criar plano</button>
+          </form>
+        </section>
+      </div>
+      {% else %}<section class="card empty">Cadastre um produto antes de criar planos.</section>{% endif %}
+    </main>
+  </body>
+</html>

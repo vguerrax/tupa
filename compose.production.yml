@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+    image: tupa-api:${TUPA_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    ports:
+      - "${TUPA_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6

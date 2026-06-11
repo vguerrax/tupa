@@ -6,10 +6,20 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.config import get_settings
 from app.database import Base
-from app.models import Tenant  # noqa: F401
+from app.models import (  # noqa: F401
+    Invoice,
+    Plan,
+    Product,
+    RefreshToken,
+    Subscription,
+    SubscriptionEvent,
+    Tenant,
+    User,
+)
 
 config = context.config
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# ConfigParser treats percent signs in URL-encoded cloud credentials as interpolation.
+config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

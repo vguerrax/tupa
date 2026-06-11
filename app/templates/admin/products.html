@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Produtos | Tupã</title>
+    <style>
+      :root { color-scheme: light; --ink: #18201b; --muted: #667168; --line: #dce4de; --brand: #17643a; --paper: #f4f7f4; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--ink); background: var(--paper); font: 15px/1.5 system-ui, sans-serif; }
+      header { background: #10291b; color: white; padding: 22px max(24px, calc((100vw - 1120px) / 2)); }
+      header strong { font-size: 20px; letter-spacing: .08em; } header span { color: #a9c5b3; margin-left: 12px; } nav { float: right; } nav a { color: #dcebe1; margin-left: 18px; text-decoration: none; } nav a.active { color: white; font-weight: 700; }
+      main { max-width: 1120px; margin: 34px auto; padding: 0 24px; }
+      .grid { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+      .card { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 24px; box-shadow: 0 8px 30px #173b2410; }
+      h1, h2 { margin: 0 0 8px; } h1 { font-size: 28px; } h2 { font-size: 18px; }
+      p { color: var(--muted); margin: 0 0 22px; }
+      label { display: block; margin: 16px 0 6px; font-weight: 650; }
+      input { width: 100%; border: 1px solid #bac8be; border-radius: 8px; padding: 11px 12px; font: inherit; }
+      input:focus { outline: 2px solid #55a878; border-color: transparent; }
+      button { width: 100%; margin-top: 20px; border: 0; border-radius: 8px; padding: 12px; color: white; background: var(--brand); font-weight: 700; cursor: pointer; }
+      table { width: 100%; border-collapse: collapse; } th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
+      th, td { padding: 13px 10px; border-bottom: 1px solid var(--line); } td code { font-size: 12px; color: #345442; }
+      .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; background: #e6f4eb; color: #185d36; font-size: 12px; font-weight: 700; }
+      .token { background:#10291b; color:#eafff0; padding:14px; border-radius:8px; overflow-wrap:anywhere; margin-bottom:18px; } .token code { color:inherit; }
+      .small-button { width:auto; margin:0; padding:7px 10px; font-size:12px; } .muted { color:var(--muted); font-size:12px; }
+      .notice, .error { border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; } .notice { background: #e6f4eb; color: #185d36; } .error { background: #fff0ed; color: #9a2f20; }
+      .empty { padding: 36px 10px; text-align: center; color: var(--muted); }
+      @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .table-wrap { overflow-x: auto; } header span { display: block; margin: 4px 0 0; } }
+    </style>
+  </head>
+  <body>
+    <header><strong>TUPÃ</strong><span>Administração</span><nav><a class="active" href="/admin/products">Produtos</a><a href="/admin/plans">Planos</a></nav></header>
+    <main>
+      <h1>Produtos consumidores</h1>
+      <p>Cadastre as aplicações que usam identidade e assinaturas do Tupã.</p>
+      {% if created %}<div class="notice">Produto cadastrado com plano free ilimitado.</div>{% endif %}
+      {% if generated_token %}<div class="token"><strong>Token gerado. Copie agora; ele nao sera exibido novamente.</strong><br><code>{{ generated_token }}</code></div>{% endif %}
+      <div class="grid">
+        <section class="card">
+          <h2>Novo produto</h2>
+          <p>O identificador gerado deve ser usado nas chamadas da aplicação.</p>
+          {% if error %}<div class="error">{{ error }}</div>{% endif %}
+          <form method="post" action="/admin/products">
+            <label for="name">Nome</label>
+            <input id="name" name="name" maxlength="255" required value="{{ form_name or '' }}" placeholder="Ex: Produto 2">
+            <label for="slug">Slug</label>
+            <input id="slug" name="slug" maxlength="100" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required value="{{ form_slug or '' }}" placeholder="produto-2">
+            <button type="submit">Cadastrar produto</button>
+          </form>
+        </section>
+        <section class="card table-wrap">
+          <h2>Produtos cadastrados</h2>
+          {% if products %}
+          <table>
+            <thead><tr><th>Produto</th><th>Slug</th><th>Product ID</th><th>Planos</th><th>Service token</th></tr></thead>
+            <tbody>
+              {% for product, plan_count in products %}
+              <tr>
+                <td><strong>{{ product.name }}</strong></td>
+                <td>{{ product.slug }}</td>
+                <td><code>{{ product.id }}</code></td>
+                <td><span class="badge">{{ plan_count }}</span></td>
+                <td>
+                  {% if product.service_token_hint %}<span class="muted">final ...{{ product.service_token_hint }}</span>{% else %}<span class="muted">nao gerado</span>{% endif %}
+                  <form method="post" action="/admin/products/{{ product.id }}/rotate-token"><button class="small-button" type="submit">{{ 'Rotacionar' if product.service_token_hint else 'Gerar token' }}</button></form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}<div class="empty">Nenhum produto cadastrado.</div>{% endif %}
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

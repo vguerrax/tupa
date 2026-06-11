@@ -1,9 +1,11 @@
 .env
 .env.production
 .product-service-tokens
-.pytest_cache/
-.venv/
-venv/
-__pycache__/
+.git
+.pytest_cache
+.venv
+venv
+__pycache__
 *.py[cod]
 *.db
+tests
